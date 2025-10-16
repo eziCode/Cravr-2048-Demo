@@ -50,29 +50,39 @@ class SoundManager {
         playerNode.play()
     }
     
+    func stopCurrentSound() {
+        playerNode.stop()
+    }
+    
     // MARK: - Sound Effects
     
     func playClick() {
+        stopCurrentSound()
         playTone(frequency: 800, duration: 0.05, volume: 0.3)
     }
     
     func playPop() {
+        stopCurrentSound()
         playTone(frequency: 600, duration: 0.08, volume: 0.3, pitchBend: -400)
     }
     
     func playDing() {
+        stopCurrentSound()
         playTone(frequency: 1200, duration: 0.15, volume: 0.25)
     }
     
     func playBubble() {
+        stopCurrentSound()
         playTone(frequency: 400, duration: 0.12, volume: 0.3, pitchBend: 300)
     }
     
     func playSwoosh() {
+        stopCurrentSound()
         playNoise(duration: 0.1, volume: 0.15)
     }
     
     func playChime() {
+        stopCurrentSound()
         playMultiTone(frequencies: [800, 1000, 1200], duration: 0.2, volume: 0.2)
     }
     

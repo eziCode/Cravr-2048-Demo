@@ -55,9 +55,9 @@ struct StarBackground: View {
             // Background color with subtle gradient
             LinearGradient(
                 colors: [
-                    Color(hex: "0a0a0a"),
-                    Color(hex: "1a1a1a"),
-                    Color(hex: "0f0f0f")
+                    Color(hex: "00361e"),
+                    Color(hex: "002818"),
+                    Color(hex: "001f12")
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
