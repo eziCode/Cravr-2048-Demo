@@ -122,6 +122,7 @@ struct ContentView: View {
     @StateObject private var game = Game2048()
     @State private var animationOffset = CGSize.zero
     @State private var isAnimating = false
+    @State private var isMoving = false
     
     var body: some View {
         ZStack {
@@ -152,7 +153,7 @@ struct ContentView: View {
                         .padding(-3)
                 )
                 .offset(animationOffset)
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: animationOffset)
+                .animation(.linear(duration: 0.2), value: animationOffset)
                 
                 // Score display
                 HStack {
@@ -206,7 +207,7 @@ struct ContentView: View {
         .gesture(
             DragGesture(minimumDistance: 30)
                 .onChanged { gesture in
-                    if !game.isGameOver {
+                    if !game.isGameOver && !isMoving {
                         // Simple visual feedback during drag
                         animationOffset = CGSize(
                             width: gesture.translation.width * 0.02,
@@ -215,15 +216,10 @@ struct ContentView: View {
                     }
                 }
                 .onEnded { gesture in
-                    guard !game.isGameOver else { return }
+                    guard !game.isGameOver && !isMoving else { return }
                     
                     let horizontal = gesture.translation.width
                     let vertical = gesture.translation.height
-                    
-                    // Reset animation state
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        animationOffset = .zero
-                    }
                     
                     // Determine direction and move
                     let direction: Direction
@@ -236,8 +232,21 @@ struct ContentView: View {
                     // Play haptic feedback
                     Haptics.shared.impact(.light)
                     
-                    // Perform move
+                    // Start move animation
+                    isMoving = true
+                    
+                    // Reset animation state immediately
+                    withAnimation(.linear(duration: 0.1)) {
+                        animationOffset = .zero
+                    }
+                    
+                    // Perform move immediately
                     game.move(direction)
+                    
+                    // End move animation quickly
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        isMoving = false
+                    }
                 }
         )
         .onAppear {
@@ -285,63 +294,71 @@ class Game2048: ObservableObject {
         var moved = false
         var combined = false
         
-        switch direction {
-        case .left:
-            for i in 0..<4 {
-                let (newRow, changed, points) = merge(row: grid[i])
-                grid[i] = newRow
-                if changed { moved = true }
-                if points > 0 { 
-                    combined = true
-                    score += points
+        // Move and merge tiles with linear animation
+        withAnimation(.linear(duration: 0.15)) {
+            switch direction {
+            case .left:
+                for i in 0..<4 {
+                    let (newRow, changed, points) = merge(row: grid[i])
+                    grid[i] = newRow
+                    if changed { moved = true }
+                    if points > 0 { 
+                        combined = true
+                        score += points
+                    }
                 }
-            }
-        case .right:
-            for i in 0..<4 {
-                let reversed = Array(grid[i].reversed())
-                let (newRow, changed, points) = merge(row: reversed)
-                grid[i] = Array(newRow.reversed())
-                if changed { moved = true }
-                if points > 0 { 
-                    combined = true
-                    score += points
+            case .right:
+                for i in 0..<4 {
+                    let reversed = Array(grid[i].reversed())
+                    let (newRow, changed, points) = merge(row: reversed)
+                    grid[i] = Array(newRow.reversed())
+                    if changed { moved = true }
+                    if points > 0 { 
+                        combined = true
+                        score += points
+                    }
                 }
-            }
-        case .up:
-            for i in 0..<4 {
-                let column = (0..<4).map { grid[$0][i] }
-                let (newCol, changed, points) = merge(row: column)
-                for j in 0..<4 { grid[j][i] = newCol[j] }
-                if changed { moved = true }
-                if points > 0 { 
-                    combined = true
-                    score += points
+            case .up:
+                for i in 0..<4 {
+                    let column = (0..<4).map { grid[$0][i] }
+                    let (newCol, changed, points) = merge(row: column)
+                    for j in 0..<4 { grid[j][i] = newCol[j] }
+                    if changed { moved = true }
+                    if points > 0 { 
+                        combined = true
+                        score += points
+                    }
                 }
-            }
-        case .down:
-            for i in 0..<4 {
-                let column = (0..<4).map { grid[$0][i] }.reversed()
-                let (newCol, changed, points) = merge(row: Array(column))
-                for j in 0..<4 { grid[j][i] = newCol.reversed()[j] }
-                if changed { moved = true }
-                if points > 0 { 
-                    combined = true
-                    score += points
+            case .down:
+                for i in 0..<4 {
+                    let column = (0..<4).map { grid[$0][i] }.reversed()
+                    let (newCol, changed, points) = merge(row: Array(column))
+                    for j in 0..<4 { grid[j][i] = newCol.reversed()[j] }
+                    if changed { moved = true }
+                    if points > 0 { 
+                        combined = true
+                        score += points
+                    }
                 }
             }
         }
         
         if moved { 
-            addRandomTile()
-            
-            // Only play sound when blocks merge
-            if combined {
-                Haptics.shared.impact(.medium)
-                SoundManager.shared.playChime()
+            // Add new tile immediately after move
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.linear(duration: 0.1)) {
+                    self.addRandomTile()
+                }
+                
+                // Only play sound when blocks merge
+                if combined {
+                    Haptics.shared.impact(.medium)
+                    SoundManager.shared.playChime()
+                }
+                
+                // Check for game over
+                self.checkGameOver()
             }
-            
-            // Check for game over
-            checkGameOver()
         }
     }
     
