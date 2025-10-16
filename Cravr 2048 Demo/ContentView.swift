@@ -21,7 +21,6 @@ struct GameColors {
 // Simple tile view component
 struct TileView: View {
     let value: Int
-    @State private var isAppearing = false
     
     var body: some View {
         ZStack {
@@ -29,30 +28,12 @@ struct TileView: View {
                 .fill(tileColor)
                 .frame(width: 70, height: 70)
                 .shadow(color: tileColor.opacity(0.3), radius: 4, x: 0, y: 2)
-                .scaleEffect(isAppearing ? 1.0 : 0.1)
-                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isAppearing)
             
             if value > 0 {
                 Text("\(value)")
                     .font(.system(size: fontSize, weight: .bold, design: .rounded))
                     .foregroundColor(textColor)
                     .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-            }
-        }
-        .onAppear {
-            if value > 0 {
-                withAnimation {
-                    isAppearing = true
-                }
-            }
-        }
-        .onChange(of: value) { oldValue, newValue in
-            if newValue > 0 && oldValue == 0 {
-                // New tile appearing
-                isAppearing = false
-                withAnimation {
-                    isAppearing = true
-                }
             }
         }
     }
